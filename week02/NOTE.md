@@ -73,3 +73,36 @@
    函数签名
 子类型
    逆变/协变
+
+
+====================== 2020 04 18===============================================
+
+InputElement
+		WhiteSpace
+		LineTerminator
+		Comment
+		Token
+			Punctuator
+			IdentifierName
+				Keywords
+				Identifier
+					变量名部分(不能与关键字重合)
+					属性部分(可以和关键字重合)
+				Future reserved Keywords 预留关键字
+			Literal
+
+Number
+	数字直接量
+	0o 开头 8进制 0o0010 是 8
+	0b 开头 2进制
+
+作业：写一个 正则表达式 能够匹配js所有的数字直接量
+
+Number----Practice
+Safe Integer
+	Number
+Fload Compare
+
+97 .toString(2)   返回结果："1100001"
+
+作业：写一个 UTF8_Encoding 
