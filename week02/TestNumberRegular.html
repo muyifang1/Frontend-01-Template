@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<body>
+<p>写一个正则表达式 匹配所有 Number 直接量</p>
+<p>测试数据 Hello World! 3!0x3f 0xad45f 0Xff 0Xzff 0o377 03770b11 0B12 0B10 3.14 -234.567 测试.333333333 测试6.02e23 测试1.473823E-32</p>
+
+<button onclick="myFunction()">运行结果</button>
+
+<p id="demo"></p>
+
+<script>
+function myFunction() {
+  var str = "Hello World! 3! 0x3f 0xad45f 0Xff 0Xzff 0o377 03770b11 0B12 0B10 3.14 -234.567 测试.333333333 测试6.02e23 -32.33e54 测试1.473823E-32";
+  var patt1 = /-?[0-9]+/g; // 整数
+  var patt2 = /0[xX][0-9a-fA-F]+/g; // 16进制
+  var patt3 = /0[oO]?[0-7]+/g; // 8进制
+  var patt4 = /0[bB][01]+/g; // 2进制
+  var patt5 = /-?\d*\.\d+/g; // 浮点数 例： -123.4567
+  var patt6 = /-?\d*\.\d+[eE]-?\d+/g; // 浮点数 例： -5.012E34 或者 1.473823E-32
+  var numPatt = /0[xX][0-9a-fA-F]+|0[oO]?[0-7]+|0[bB][01]+|-?[0-9]+|-?\d*\.\d+|-?\d*\.\d+[eE]-?\d+/g // 匹配Number字面量
+  var result = str.match(numPatt);
+  document.getElementById("demo").innerHTML = result;
+}
+</script>
+
+</body>
+</html>
