@@ -1,0 +1,40 @@
+<script>
+  // 知识点待补充： Promise ,  async
+function sleep(d){
+  return new Promise(resolve => setTimeout(resolve,d));
+}
+
+// 立即执行的异步表达式
+void async function(){
+  var i = 0;
+  while (true){
+    console.log(i++);
+    await sleep(1000);
+  }
+}();
+
+///////////////////////////////////////////
+function sleep(d){
+  return new Promise(resolve => setTimeout(resolve,d));
+}
+
+async function* foo(){
+  var i =0;
+  while (true){
+    console.log(i++);
+    yield i++;
+    await sleep(1000);
+  }
+}
+
+void async function(){
+  var g = foo();
+//  console.log(await g.next());
+//  console.log(await g.next());
+
+  for await ( let e of g ){
+    console.log(await g.next());
+  }
+}();
+
+</script>
