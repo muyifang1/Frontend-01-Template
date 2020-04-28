@@ -1,13 +1,65 @@
 <script>
+// convertStringToNumber
 function convertStringToNumber(string,x){
+  // 默认十进制
+  if (arguments.length < 2){
+    x = 10;
+  }
+
   var chars = string.split('');
-  var number = 0
-  for (var i=0; i<chars.length;i++){
+  var number = 0;
+  var i = 0;
+  // 整数部分
+  while (i<chars.length && chars[i] != '.'){
     number = number * x;
     number += chars[i].codePointAt(0) - '0'.codePointAt(0);
+    i++;
   }
-  return number;
+  // 小数点
+  if(chars[i] ==='.'){
+    i++;
+  }
+  // 小数部分
+  var fraction = 1;
+  while (i<chars.length){
+    fraction = fraction / x;
+    number += (chars[i].codePointAt(0) - '0'.codePointAt(0))*fraction;
+    i++;
+  }
+
+  return number ;
 }
 
-convertStringToNumber("100",2)
+convertStringToNumber("100.234")
+
+// convertNumberToString
+function convertNumberToString(number,x){
+  // 默认十进制
+  if(arguments.length<2){
+    x = 10;
+  }
+
+  var integer = Math.floor(number);
+  var fraction = number - integer;
+  var fractionPoint = (''+number).indexOf('.');
+  var fractionLength = (''+number).length - fractionPoint - 1;
+  var string = '';
+
+  while(integer > 0){
+    string = String(integer % x) + string;
+    integer = Math.floor(integer/x);
+  }
+
+  if(fractionPoint > -1 ){
+    string += '.';
+    while(fractionLength > 0){
+      fraction *= x;
+      string += Math.floor(fraction % x);
+      fractionLength --;
+    }
+  }
+
+  return string;
+}
+
 </script>
