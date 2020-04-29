@@ -9,6 +9,7 @@ function convertStringToNumber(string,x){
   var chars = string.split('');
   var number = 0;
   var i = 0;
+  var j = 0;
   // 整数部分
   while (i<chars.length && chars[i] != '.'){
     number = number * x;
@@ -25,12 +26,12 @@ function convertStringToNumber(string,x){
     fraction = fraction / x;
     number += (chars[i].codePointAt(0) - '0'.codePointAt(0))*fraction;
     i++;
+    j++;
   }
 
-  return number ;
+  var result = new Number(number)
+  return result.toFixed(j) ;
 }
-
-convertStringToNumber("100.234")
 
 // convertNumberToString
 function convertNumberToString(number,x){
@@ -61,5 +62,11 @@ function convertNumberToString(number,x){
 
   return string;
 }
+
+console.log(convertStringToNumber("100.23456"));
+console.log(convertNumberToString(10.234));
+
+console.log(convertStringToNumber("100",2));
+console.log(convertNumberToString(10,2));
 
 </script>
