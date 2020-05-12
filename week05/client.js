@@ -31,16 +31,62 @@ ${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\
 \r
 ${this.bodyText}`
   }
-// todo need work continue 01:13:04
-  send(){
 
-  }
+  send(connection){
+
+      return new Promise((resolve, reject) => {
+          if(connection){
+              connection.write(this.toString());
+          } else {
+              connection = net.createConnection({
+                  host: this.host,
+                  port: this.port
+              }, () => {
+                        connection.write(this.toString());
+              })
+          }
+          // 可能会多个data
+          connection.on('data', (data) => {
+            resolve(data.toString());
+            connection.end();
+          });
+          connection.on('error', (err) => {
+            reject(err);
+            connection.end();
+          });
+      });
+
+    }
 }
 
 class Response{
 
 }
+// todo need work continue 01:30:04
+class ResponseParser{
 
+}
+
+// api 调用形式
+void async function(){
+    let request = new Request({
+        method:"POST",
+        host:"127.0.0.1",
+        port:"8088",
+        path:"/",
+        headers: {
+          ["X-Foo2"]:"customed"
+        },
+        body:{
+            name:"yangqi"
+        }
+    });
+
+    let response = await request.send();
+    console.log(response);
+}();
+
+/*
 const client = net.createConnection({
   host:"127.0.0.1",
   port: 8088 }, () => {
@@ -64,13 +110,12 @@ const client = net.createConnection({
   client.write(request.toString());
 
   // 模拟post请求
-/*
-  client.write('POST /HTTP/1.1\r\n');
-  client.write('Content-Type: application/x-www-form-urlencoded\r\n');
-  client.write('Content-Length: 11\r\n');
-  client.write('\r\n');
-  client.write('name=yangqi');
-*/
+//  client.write('POST /HTTP/1.1\r\n');
+//  client.write('Content-Type: application/x-www-form-urlencoded\r\n');
+//  client.write('Content-Length: 11\r\n');
+//  client.write('\r\n');
+//  client.write('name=yangqi');
+
 //  client.write("POST /HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 11\r\n\r\nname=winter");
 });
 client.on('data', (data) => {
@@ -80,3 +125,4 @@ client.on('data', (data) => {
 client.on('end', () => {
   console.log('disconnected from server');
 });
+*/
