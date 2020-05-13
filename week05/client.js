@@ -64,7 +64,52 @@ class Response{
 }
 // todo need work continue 01:30:04
 class ResponseParser{
+    constructor() {
+        this.WATTING_STATUS_LINE = 0;
+        this.WATTING_STATUS_LINE_END = 1;
+        this.WATTING_HEAD_NAME = 2;
+        this.WATTING_HEAD_SPACE = 3;
+        this.WATTING_HEAD_VALUE = 4;
+        this.WATTING_HEAD_LINE_END = 5;
+        this.WATTING_HEAD_BLOCK_END = 6;
+        this.WATTING_BODY = 7;
 
+        this.current = this.this.WATTING_STATUS_LINE;
+        this.statusLine = '';
+        this.headers = {};
+        this.headerName = '';
+        this.headerValue = '';
+        this.bodyParser = null;
+    }
+
+    get isFinished() {
+        return this.bodyParser && this.bodyParser.isFinished;
+    }
+
+    get response() {
+        //  用正则匹配
+        this.statusLine.match(/HTTP\/1.1 ([0-9]+)([\s\S]+)/);
+        return {
+            statusCode: RegExp.$1,
+            statusText: RegExp.$2,
+            headers: this.headers,
+            body: this.bodyParser.content.join('')
+        }
+    }
+
+    receive(string) {
+        for (let i = 0; i < string.length; i++) {
+            // 逐步解析直到结束
+            if (!this.isFinished){
+                // 根据每一个Char 解析
+                this.receiveChar(string.charAt(i));
+            }
+        }
+    }
+    // 具体解析方法
+    receiveChar(char) {
+// todo need work continue
+    }
 }
 
 // api 调用形式
