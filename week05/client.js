@@ -19,7 +19,9 @@ class Request{
     if(this.headers["Content-Type"] === "application/json"){
         this.bodyText = JSON.stringify(this.body);
     }else if(this.headers["Content-Type"] === "application/x-www-form-urlencoded"){
-        this.bodyText = Object.keys(this.body).map(key => `${key}=${encodeURIComponent(this.body[key])}`).join('&');
+        this.bodyText = Object.keys(this.body)
+            .map(key => `${key}=${encodeURIComponent(this.body[key])}`)
+            .join('&');
         // 计算Content-Length
         this.headers["Content-Length"] = this.bodyText.length;
     }
@@ -27,14 +29,16 @@ class Request{
 
   toString(){
       return `${this.method} ${this.path} HTTP/1.1\r
-${Object.keys(this.headers).map(key => `${key}: ${this.headers[key]}`).join('\r\n')}\r
+${Object.keys(this.headers)
+    .map(key => `${key}: ${this.headers[key]}`)
+    .join('\r\n')}\r
 \r
 ${this.bodyText}`
   }
 
   send(connection){
-
       return new Promise((resolve, reject) => {
+          const parser = new ResponseParser();
           if(connection){
               connection.write(this.toString());
           } else {
@@ -43,11 +47,16 @@ ${this.bodyText}`
                   port: this.port
               }, () => {
                         connection.write(this.toString());
-              })
+              });
           }
           // 可能会多个data
           connection.on('data', (data) => {
-            resolve(data.toString());
+            // 解析流
+            parser.receive(data.toString());
+            if (parser.isFinished) {
+                // resolve(data.toString());
+                resolve(parser.response);
+            }
             connection.end();
           });
           connection.on('error', (err) => {
@@ -55,26 +64,25 @@ ${this.bodyText}`
             connection.end();
           });
       });
-
     }
 }
 
 class Response{
 
 }
-// todo need work continue 01:30:04
+
 class ResponseParser{
     constructor() {
-        this.WATTING_STATUS_LINE = 0;
-        this.WATTING_STATUS_LINE_END = 1;
-        this.WATTING_HEAD_NAME = 2;
-        this.WATTING_HEAD_SPACE = 3;
-        this.WATTING_HEAD_VALUE = 4;
-        this.WATTING_HEAD_LINE_END = 5;
-        this.WATTING_HEAD_BLOCK_END = 6;
-        this.WATTING_BODY = 7;
+        this.WAITING_STATUS_LINE = 0;
+        this.WAITING_STATUS_LINE_END = 1;
+        this.WAITING_HEAD_NAME = 2;
+        this.WAITING_HEAD_SPACE = 3;
+        this.WAITING_HEAD_VALUE = 4;
+        this.WAITING_HEAD_LINE_END = 5;
+        this.WAITING_HEAD_BLOCK_END = 6;
+        this.WAITING_BODY = 7;
 
-        this.current = this.this.WATTING_STATUS_LINE;
+        this.current = this.WAITING_STATUS_LINE;
         this.statusLine = '';
         this.headers = {};
         this.headerName = '';
@@ -109,6 +117,104 @@ class ResponseParser{
     // 具体解析方法
     receiveChar(char) {
 // todo need work continue
+        if (this.current === this.WAITING_STATUS_LINE) {
+            if (char === '\r') {
+                this.current = this.WAITING_STATUS_LINE_END;
+            } else {
+                this.statusLine += char;
+            }
+        } else if (this.current === this.WAITING_STATUS_LINE_END) {
+            if (char === '\n') {
+                this.current = this.WAITING_HEAD_NAME;
+            }
+        } else if (this.current === this.WAITING_HEAD_NAME) {
+            if (char === ':') {
+                this.current = this.WAITING_HEAD_SPACE;
+            } else if (char === '\r') {
+                // header 结束，创建 TrunkedBodyParser 对象
+                this.current = this.WAITING_HEAD_BLOCK_END;
+                if (this.headers['Transfer-Encoding'] === 'chunked') {
+                    this.bodyParser = new TrunkedBodyParser();
+                }
+            } else {
+                // 拼接 header name
+                this.headerName += char;
+            }
+        } else if (this.current === this.WAITING_HEAD_SPACE) {
+            if (char === ' ') {
+                this.current = this.WAITING_HEAD_VALUE;
+            }
+        } else if (this.current === this.WAITING_HEAD_VALUE) {
+            if (char === '\r') {
+              // 解析到 head value末尾
+                this.current = this.WAITING_HEAD_LINE_END;
+                this.headers[this.headerName] = this.headerValue;
+                this.headerName = '';
+                this.headerValue ='';
+            } else {
+              // 拼凑 header value
+                this.headerValue += char;
+            }
+        } else if (this.current === this.WAITING_HEAD_LINE_END) {
+            if (char === '\n'){
+                this.current = this.WAITING_HEAD_NAME;
+            }
+        } else if (this.current === this.WAITING_HEAD_BLOCK_END) {
+            if (char === '\n') {
+                this.current = this.WAITING_BODY;
+            }
+        } else if (this.current === this.WAITING_BODY) {
+            // 开始解析 body
+              this.bodyParser.receiveChar(char);
+        }
+    }
+}
+
+class TrunkedBodyParser {
+    constructor() {
+        this.WAITING_LENGTH = 0;
+        this.WAITING_LENGTH_LINE_END = 1;
+        this.READING_TRUNK = 2;
+
+        this.WAITING_NEW_LINE = 3;
+        this.WAITING_NEW_LINE_END = 4;
+        this.length = 0;
+        this.content = [];
+        this.isFinished = false;
+        this.current = this.WAITING_LENGTH;
+    }
+
+    receiveChar(char) {
+        // console.log(this.current)
+        if (this.current === this.WAITING_LENGTH) {
+            if (char === '\r') {
+                if (this.length === 0) {
+                    this.isFinished = true;
+                }
+                this.current = this.WAITING_LENGTH_LINE_END;
+            } else {
+                this.length *= 10;
+                this.length += char.charCodeAt(0) - '0'.charCodeAt(0);
+            }
+        } else if (this.current === this.WAITING_LENGTH_LINE_END) {
+            if (char === '\n') {
+                this.current = this.READING_TRUNK;
+            }
+        } else if (this.current === this.READING_TRUNK) {
+            this.content.push(char);
+            this.length--;
+            if (this.length === 0) {
+                this.current = this.WAITING_NEW_LINE;
+            }
+        } else if (this.current === this.WAITING_NEW_LINE) {
+            if (char === '\r') {
+                this.current = this.WAITING_NEW_LINE_END;
+            }
+        } else if (this.current === this.WAITING_NEW_LINE_END) {
+            if (char === '\n') {
+                this.current = this.WAITING_LENGTH;
+            }
+        }
     }
 }
 
@@ -120,7 +226,7 @@ void async function(){
         port:"8088",
         path:"/",
         headers: {
-          ["X-Foo2"]:"customed"
+          ["X-Foo2"]:"customized"
         },
         body:{
             name:"yangqi"
@@ -130,44 +236,3 @@ void async function(){
     let response = await request.send();
     console.log(response);
 }();
-
-/*
-const client = net.createConnection({
-  host:"127.0.0.1",
-  port: 8088 }, () => {
-  // 'connect' listener.
-  console.log('connected to server!');
-
-  let request = new Request({
-      method:"POST",
-      host:"127.0.0.1",
-      port:"8088",
-      path:"/",
-      headers: {
-        ["X-Foo2"]:"customed"
-      },
-      body:{
-          name:"yangqi"
-      }
-  })
-
-  console.log(request.toString());
-  client.write(request.toString());
-
-  // 模拟post请求
-//  client.write('POST /HTTP/1.1\r\n');
-//  client.write('Content-Type: application/x-www-form-urlencoded\r\n');
-//  client.write('Content-Length: 11\r\n');
-//  client.write('\r\n');
-//  client.write('name=yangqi');
-
-//  client.write("POST /HTTP/1.1\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: 11\r\n\r\nname=winter");
-});
-client.on('data', (data) => {
-  console.log(data.toString());
-  client.end();
-});
-client.on('end', () => {
-  console.log('disconnected from server');
-});
-*/
