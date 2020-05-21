@@ -193,8 +193,10 @@ class TrunkedBodyParser {
                 }
                 this.current = this.WAITING_LENGTH_LINE_END;
             } else {
-                this.length *= 10;
-                this.length += char.charCodeAt(0) - '0'.charCodeAt(0);
+                this.length *= 16;
+                this.length += parseInt(char,16);
+                // 注意length 是16 进制
+                // this.length += char.charCodeAt(0) - '0'.charCodeAt(0);
             }
         } else if (this.current === this.WAITING_LENGTH_LINE_END) {
             if (char === '\n') {
@@ -234,5 +236,7 @@ void async function(){
     });
 
     let response = await request.send();
+
+  //  let dom = parser.parseHTML(response.body);
     console.log(response);
 }();
