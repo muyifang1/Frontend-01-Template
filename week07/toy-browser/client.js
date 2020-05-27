@@ -1,5 +1,5 @@
 const net = require("net");
-const parse = require('./html-parser');
+const parser = require('./parser.js');
 
 class Request{
   // method, url = host + port + path
@@ -117,7 +117,6 @@ class ResponseParser{
     }
     // 具体解析方法
     receiveChar(char) {
-// todo need work continue
         if (this.current === this.WAITING_STATUS_LINE) {
             if (char === '\r') {
                 this.current = this.WAITING_STATUS_LINE_END;
@@ -240,6 +239,9 @@ void async function(){
     });
 
     let response = await request.send();
-   // console.log(response);
-    console.log(parse.parseHTML(response.body));
+    // console.log(request.toString());
+    // console.log(response); // response from server.js
+   // console.log(parser.parserHTML(response.body)); // 将server端返回的body传递给parser
+    let dom = parser.parserHTML(response.body);
+   // console.log(dom);
 }();

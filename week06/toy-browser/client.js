@@ -241,5 +241,7 @@ void async function(){
     let response = await request.send();
     // console.log(request.toString());
     // console.log(response); // response from server.js
-    console.log(parser.parserHTML(response.body)); // 将server端返回的body传递给parser
+   // console.log(parser.parserHTML(response.body)); // 将server端返回的body传递给parser
+    let dom = parser.parserHTML(response.body);
+   // console.log(dom);
 }();
