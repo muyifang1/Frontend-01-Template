@@ -27,3 +27,17 @@ class selector:	.cls
 
 选择器优先级：四级 ？ 需要补充 // todo
 简单选择器计数 方式 // todo 需要补充
+
+作业用一个包分析选择器
+作业写出下面选择器的优先级
+div#a.b .c[id=x]
+#a:not(#b)
+*.a
+div.a
+
+作业：编写一个match函数
+function match(selector, element){
+	return true;
+}
+
+match("div #id.class", document.getElementById("id"));
