@@ -1,15 +1,124 @@
+const css = require('css');
+const EOF = Symbol("EOF"); // means End of file
+const layout = require("./layout.js");
+
 let currentToken = null; // 全局变量结构体，记录当前Token
 let currentAttribute = null;
 let stack = [{type:"document",children:[]}]; // 用来记录树形结构
 let currentTextNode = null;
 
-// 发出一个Token结构体
-function emit(token){
-    if(token.type != "text"){
-       // console.log(token);
-       return ;
+// addCSSRules, 把CSS规则暂存入数组
+let rules = [];
+function addCssRules(text){
+    var ast = css.parse(text);
+  //  console.log(JSON.stringify(ast, null, " "));
+    rules.push(...ast.stylesheet.rules);
+}
+
+function match(element, selector){
+    if(!selector || !element.attributes){
+        return false;
     }
 
+    if(selector.charAt(0) == "#"){
+        var attr = element.attributes.filter(attr => attr.name === "id")[0];
+        if(attr && attr.value === selector.replace("#",'')){
+            return true;
+        }
+    } else if(selector.charAt(0) == "."){
+        var attr = element.attributes.filter(attr => attr.name === "class")[0];
+        if(attr && attr.value === selector.replace(".",'')){
+            return true;
+        }
+    } else {
+        if(element.tagName === selector){
+            return true;
+        }
+    }
+}
+
+function specificity(selector){
+    var p = [0,0,0,0];
+    var selectorParts = selector.split(" ");
+    for(var part of selectorParts){
+        if(part.charAt(0) == "#"){
+            p[1] += 1;
+        } else if(part.charAt(0) == "."){
+            p[2] += 1;
+        } else {
+            p[3] += 1;
+        }
+    }
+
+    return p;
+}
+
+function compare(sp1, sp2){
+    if(sp1[0] - sp2[0]){
+        return sp1[0] - sp2[0];
+    }
+    if(sp1[1] - sp2[1]){
+        return sp1[1] - sp2[1];
+    }
+    if(sp1[2] - sp2[2]){
+        return sp1[2] - sp2[2];
+    }
+
+    return sp1[3] - sp2[3];
+}
+
+function computeCSS(element){
+    var elements = stack.slice().reverse();
+    
+    if(!element.computedStyle){
+        element.computedStyle = {};
+    }
+
+    for(let rule of rules){
+        var selectorParts = rule.selectors[0].split(" ").reverse();
+
+        if(!match(element, selectorParts[0])){
+            continue;
+        }
+
+        let matched = false;
+
+        var j = 1;
+        for(var i = 0; i < elements.length; i++){
+            if(match(elements[i], selectorParts[j])){
+                j++;
+            }
+        }
+        if(j >= selectorParts.length){
+            matched = true;
+        }
+        if(matched){
+            // 匹配
+            // console.log("Element", element, "matched rule", rule);
+            var sp = specificity(rule.selectors[0]);
+
+            var computedStyle = element.computedStyle;
+            for(var declaration of rule.declarations){
+                if(!computedStyle[declaration.property]){
+                    computedStyle[declaration.property] = {};
+                }
+
+                if(!computedStyle[declaration.property].specificity){
+                    computedStyle[declaration.property].value = declaration.value;
+                    computedStyle[declaration.property].specificity = sp;
+                } else if(compare(computedStyle[(declaration.property)].specificity, sp) < 0){
+                    for(var k=0; k<4; k++){
+                        computedStyle[declaration.property][declaration.value][k] += sp[k];
+                    }
+                }
+            }
+            console.log(element.computedStyle);
+        }
+    }
+}
+
+// 发出一个Token结构体
+function emit(token){
     let top = stack[stack.length -1]; // 初始化
 
     if(token.type == "startTag"){
@@ -30,6 +139,9 @@ function emit(token){
                 });
             }
         }
+
+        computeCSS(element);
+
         // 添加节点
         top.children.push(element);
         //element.parent = top;
@@ -43,6 +155,12 @@ function emit(token){
         if(top.tagName != token.tagName){
             throw new Error("Tag start end doesn't match!");
         } else {
+            // style标签，执行添加CSS规则操作
+            if(top.tagName === "style"){
+                addCssRules(top.children[0].content);
+            }
+            // todo：注意layout 时间点； 实验一下其他时机 layout
+            layout(top);
             stack.pop();
         }
         currentTextNode = null;
@@ -57,8 +175,6 @@ function emit(token){
         currentTextNode.content += token.content;
     }
 }
-
-const EOF = Symbol("EOF"); // means End of file
 
 // 状态机逐层解析
 // 三种情况：进入tagOpen状态； 文件结束；tag内容
@@ -110,9 +226,11 @@ function tagName(c) {
         currentToken.tagName += c; // 拼接Token中tagName属性
         return tagName;
     } else if(c == ">"){
+        emit(currentToken);
         // 标签完结
         return data;
     } else {
+        currentToken.tagName += c;
         return tagName;
     }
 }
@@ -182,7 +300,7 @@ function beforeAttributeValue(c){
         // 单引号属性值
         return singleQuotedAttributeValue;
     } else if(c == ">"){
-        // return data;
+        return data;
     } else {
         return UnquotedAttributeValue(c);
     }
@@ -212,8 +330,8 @@ function singleQuotedAttributeValue(c){
 
     } else {
         currentAttribute.value += c;
-        // return doubleQuotedAttributeValue;
-        return singleQuotedAttributeValue;
+        return doubleQuotedAttributeValue;
+       // return singleQuotedAttributeValue; // todo try again
     }
 }
 
@@ -262,6 +380,7 @@ function selfClosingStartTag(c){
     if(c == ">"){
         // Token结构体设置自关闭属性为TRUE
         currentToken.isSelfClosing = true;
+        emit(currentToken);
         return data;
     } else if(c == "EOF"){
 
@@ -297,5 +416,6 @@ module.exports.parserHTML = function parserHTML(html){
     }
     // 循环结束后设定 End of file
     state = state(EOF);
-    console.log(stack[0]);
+    // console.log(stack[0]);
+    return stack[0];
 }

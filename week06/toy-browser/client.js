@@ -243,5 +243,6 @@ void async function(){
     // console.log(response); // response from server.js
    // console.log(parser.parserHTML(response.body)); // 将server端返回的body传递给parser
     let dom = parser.parserHTML(response.body);
-   // console.log(dom);
+   // console.log(JSON.stringify(dom, null, " "));
+    console.log(dom);
 }();
