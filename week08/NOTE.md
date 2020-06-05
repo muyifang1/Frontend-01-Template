@@ -41,3 +41,32 @@ function match(selector, element){
 }
 
 match("div #id.class", document.getElementById("id"));
+
+//////////////////////////////////////////////////////
+CSS 排版
+盒Box 概念领悟
+源代码	标签	Tag
+语义	元素	Element
+表现	盒		Box
+
+1.HTML代码中可以书写开始标签，结束标签，和自封闭标签。
+2.一对起止标签，表示一个元素。
+3.DOM树中存储的是元素和其他类型的节点(Node).
+4.CSS选择器选中的是元素，在排版时可能产生多个盒。
+5.排版和渲染的基本单位是盒。
+
+盒模型分为四层，由外至内：
+margin 留白
+	boder 边框 border-box:width
+		padding 边距
+			content 内容 content-box:width
+
+正常流 normal flow
+收集盒进行
+计算盒在行中的排布
+计算行的排布
+
+注意：一个linebox如果内容为空基线在底部。解决方法内容配合 vertical-align:bottom属性或者vertical-align:top属性解决空内容基线不同的问题。
+行模型 以最高元素的height处理。
+
+float与clear
