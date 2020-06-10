@@ -69,7 +69,7 @@
 68: "image-orientation"
 69: "image-rendering"
 70: "isolation"
-71: "justify-items"
+71: "justify-items" 为所有盒中的项目定义了默认的 justify-self 
 72: "justify-self"
 73: "left"
 74: "letter-spacing"
