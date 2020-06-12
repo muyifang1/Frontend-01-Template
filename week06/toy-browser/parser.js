@@ -176,10 +176,11 @@ function emit(token){
     }
 }
 
-// 状态机逐层解析
+// 状态机逐层解析 ：参照HTML官方文档，已经列出HTML的状态
 // 三种情况：进入tagOpen状态； 文件结束；tag内容
 function data(c){
     if(c == "<") {
+        // 开始标签
         return tagOpen;
     } else if(c == EOF) {
         emit({
@@ -407,6 +408,7 @@ function endTagOpen(c){
     }
 }
 
+// parser接受HTML文本做为参数，返回一颗DOM树
 module.exports.parserHTML = function parserHTML(html){
     // console.log(html); // test 输出收到的 html
     let state = data;
