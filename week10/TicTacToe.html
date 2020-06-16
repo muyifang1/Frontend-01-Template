@@ -1,0 +1,174 @@
+<style>
+    .cell {
+        width:100px;
+        height:100px;
+        background-color: green;
+        display: inline-block;    /*  显示换行  */
+        border:solid 1px white; /* 间距空白分隔 */
+        vertical-align: middle;   /* 横向对齐 */
+
+        line-height:100px; /* cell水平居中 */
+        font-size:60px; /* cell文字显示大小 */
+        text-align: center; /* cell垂直居中 */
+    }
+</style>
+
+<div id="board"></div>
+
+<script>
+
+    // 二位数组抽象棋盘状态,棋盘初始化状态
+    let pattern = [
+        [0,0,0],
+        [0,0,0],
+        [0,0,0]
+    ]
+    // 初始化棋子种类，每次落子后用3-color 实现切换落子。
+    // 2 = ✖；1 = 〇； 0 = blank
+    let color = 2;
+
+    function show(){
+        // 取得页面board元素
+        let board = document.getElementById("board");
+        // 每一次显示 将board之前内容清空，目的是做到刷新，只显示最新情况
+        board.innerHTML="";
+
+        for(let i=0; i<3; i++){
+            for(let j=0; j<3; j++){
+                // 创建单个棋子
+                let cell = document.createElement("div");
+                // 调用样式，需要使用classList
+                cell.classList.add("cell");
+                // 用三目运算替代switch case
+                // 2 = ✖；1 = 〇； 0 = blank
+                cell.innerText =
+                    pattern[i][j] == 2 ? "✖" : 
+                    pattern[i][j] == 1 ? "〇" :
+                    "";
+                // 追加cell点击事件监听，调用move方法，传入被点击的坐标
+                cell.addEventListener("click",()=>move(i,j));
+
+                board.appendChild(cell);
+            }
+            board.appendChild(document.createElement("br"));
+        }
+    }
+
+    // 点击cell事件，落子方法
+    function move(x,y){
+        // 不能在一点重复落子
+        if(pattern[x][y] !== 0){
+            return;
+        }
+
+        pattern[x][y] = color;
+
+        // 判断是否获胜
+        if (checkWin(pattern,color)){
+            alert( color == 2 ? "✖ is Winner !!!" : "〇 is Winner !!!");
+        }
+        
+        // 实现交替落子
+        color = 3 - color;
+
+        // 预判是否获胜
+        if (willWin(pattern,color)){
+            console.log( color == 2 ? "✖ will win !!!":"〇 will win !!!");
+        }
+
+        // 落子后刷新board
+        show();
+    }
+
+// todo 后期 尝试入参加入x,y坐标，使用向量方法判断输赢。
+    function checkWin(pattern,color){
+        // 判断横向是否成功连线
+        for(let i=0;i<3;i++){
+            let win = true;
+            for(let j=0;j<3;j++){
+                if (pattern[i][j] !== color){
+                    win = false;
+                    break;
+                }
+            }
+            if (win){
+                return true;
+            }
+        }
+
+        // 判断纵向是否成功连线
+        for(let i=0;i<3;i++){
+            let win = true;
+            for(let j=0;j<3;j++){
+                if (pattern[j][i] !== color){
+                    win = false;
+                    break;
+                }
+            }
+            if (win){
+                return true;
+            }
+        }
+
+        // 判断右斜线是否成功连线
+        {
+            let win = true;
+            for(let i=0;i<3;i++){
+                // 右斜线成功连线，每个子横纵坐标相等。
+                if(pattern[i][i] !== color){
+                    win = false;
+                    break;
+                }
+            }
+            if (win){
+                return true;
+            }
+        }
+
+        // 判断左斜线是否成功连线
+        {
+            let win = true;
+            for(let i=0;i<3;i++){
+                // 左斜线成功连线，每个子横纵坐标之和是2。
+                if(pattern[i][2-i] !== color){
+                    win = false;
+                    break;
+                }
+            }
+            if (win){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // clone当前棋盘 用来做预判获胜
+    function clone(pattern){
+        return JSON.parse(JSON.stringify(pattern));
+    }
+
+    // 预判是否获胜
+    function willWin(pattern,color){
+        for(let i=0; i<3; i++){
+            for(let j=0; j<3; j++){
+                // 判断此处是否可以落子
+                if(pattern[i][j]!==0){
+                    continue;
+                }
+                // 预判在此落子是否可能获胜
+                let tmp = clone(pattern);
+                tmp[i][j] = color;
+                if (checkWin(tmp,color)){
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // 抽象必输的情况： 我方没有willWin点，且敌方有两个willWin点。
+
+    show(pattern);
+
+</script>
