@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trafic Lights Test</title>
+</head>
+<style>
+    div {
+        background-color: grey;
+        display:inline-block;
+        margin:10px;
+        width:50px;
+        height:50px;
+        border-radius:50px;
+    }
+    .green.light {
+        background-color: green;
+    }
+    .yellow.light {
+        background-color: yellow;
+    }
+    .red.light {
+        background-color: red;
+    }
+</style>
+<body onload="">
+    <div class="green"></div>
+    <div class="yellow"></div>
+    <div class="red"></div>
+
+    <button id="next">next</button>
+</body>
+</html>
+<script>
+
+    function green(){
+        var lights = document.getElementsByTagName("div");
+        for (let i=0;i<3;i++){
+            lights[i].classList.remove("light");
+        }
+        document.getElementsByClassName("green")[0].classList.add("light");
+    }
+
+    function red(){
+        var lights = document.getElementsByTagName("div");
+        for (let i=0;i<3;i++){
+            lights[i].classList.remove("light");
+        }
+        document.getElementsByClassName("red")[0].classList.add("light");
+    }
+
+    function yellow(){
+        var lights = document.getElementsByTagName("div");
+        for(let i=0;i<3;i++){
+            lights[i].classList.remove("light");
+        }
+        document.getElementsByClassName("yellow")[0].classList.add("light");
+    }
+
+    /*
+        亮灯规则，绿灯3秒，黄灯1秒，红灯2秒
+    */
+
+    // setTimeout 实现方式
+    function goWithSetTimeout(){
+        green();
+    /*
+        // setTimeout 累加时间
+        setTimeout(yellow,3000);
+        setTimeout(red,4000);
+        setTimeout(go,7000);
+    */
+        // 原始setTimeout嵌套实现方式
+        setTimeout(function(){
+            yellow()
+            setTimeout(function(){
+                red()
+                setTimeout(function(){
+                    goWithSetTimeout()
+                },2000)
+            },1000)
+        }, 3000)
+    }
+
+    // promise 实现方式
+    function sleep(t){
+        return new Promise((resolve,reject) => {
+            setTimeout(resolve,t);
+        });
+    }
+    // 链式表达，本质上还是setTimeout
+    function goWithPromise(){
+        green();
+        sleep(3000).then(()=>{
+            yellow();
+            return sleep(1000);
+        }).then(()=>{
+            red();
+            return sleep(2000);
+        }).then(goWithPromise)
+    }
+
+    // async await 实现方式
+    // async 修饰方法，方法内可以使用await语法
+    async function go(){
+        while(true){
+            green();
+            await sleep(3000);
+            yellow();
+            await sleep(1000);
+            red();
+            await sleep(2000);
+        }
+    }
+
+    // 手动控制红绿灯变换
+    function happen(element, eventName){
+        return new Promise((resolve, reject)=>{
+            // 监听一次,使用第三个参数
+            element.addEventListener(eventName,resolve,{once:true});
+        });
+    }
+
+    async function goByHandMadeUpdate(){
+        while(true){
+            green();
+            await happen(document.getElementById("next"),'click');
+            yellow();
+            await happen(document.getElementById("next"),"click");
+            red();
+            await happen(document.getElementById("next"),'click');
+        }
+    }
+
+    // 通过generator方式实现异步
+    function* goGen(){
+        while(true){
+            green();
+            yield sleep(3000);
+            yellow();
+            yield sleep(1000);
+            red();
+            yield sleep(2000);
+        }
+    }
+
+    function run(iterator){
+        let {value, done} = iterator.next();
+        if(done){
+            return;
+        } else if(value instanceof Promise){
+            value.then(() => {
+                run(iterator);
+            })
+        }
+    }
+    // 早年co框架通过generator yield 实现异步的思路
+    function co(generator){
+        return function(){
+            return run(generator());
+        }
+    }
+
+    goGen = co(goGen);
+
+</script>

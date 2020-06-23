@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Path</title>
+</head>
+<body>
+    <div id="container"></div>
+    <!--- 把map保存到localStorage中 -->
+    <button onclick="localStorage.map = JSON.stringify(map)">save</button>
+    <button onclick="delete localStorage.map">clear</button>
+</body>
+</html>
+<style>
+    .cell {
+        display:inline-block;
+        width:6px;
+        height:6px;
+        background-color: gray;
+        border-bottom:solid 1px white;
+        border-right:solid 1px white;
+        vertical-align:middle;
+    }
+    #container{
+        display:flex;
+        flex-wrap:wrap;
+        width:701px;
+    }
+</style>
+<script>
+  
+    // 在没有fill方法的年代 如何创建给10000元素的数组赋值为0
+    //  var map = new Array(10001).join(0).split('').map(s => Number(s));
+    var map = localStorage.map ? JSON.parse(localStorage.map) : new Array(10000).fill(0);
+
+    let container = document.getElementById("container");
+    for(let y=0; y < 100; y++){
+        for(let x=0; x < 100; x++){
+            let cell = document.createElement("div");
+            cell.classList.add("cell");
+
+            // 初始化localStorage中map图象
+            if (map[y*100 + x]===1){
+                cell.style.backgroundColor="black";
+            }
+
+            // 监听每个cell上mouse事件
+            cell.addEventListener('mousemove', ()=>{
+                if(mouse){
+                    // 标准橡皮擦操作应该是 remove style
+                    if(clear){
+                        // 右键事件，颜色恢复灰色，同时数据置为0
+                        cell.style.backgroundColor = "grey";
+                        map[y*100 + x]=0;
+                    }else{
+                        // 左键事件，单元格颜色变黑，同时数据保存为1
+                        cell.style.backgroundColor = "black";
+                        map[y*100 + x]=1;
+                    }
+                }
+            })
+            container.appendChild(cell);
+        }
+    }
+
+    // 设置一个标志位
+    let mouse = false;
+    let clear = false;
+
+    // 在document监听事件
+    document.addEventListener("mousedown", e=>{
+        mouse = true;
+        clear = (e.which === 3);
+    });
+    document.addEventListener("mouseup", ()=> mouse=false);
+    // 右键也可以画图，把右键contextmenu 禁用
+    document.addEventListener("contextmenu", e=>e.preventDefault());
+
+    function sleep(t){
+        return new Promise(function(resolve){
+            setTimeout(resolve,t);
+        });
+    }
+
+    async function findPath(map, start, end){
+        // todo 了解slice用法
+        // slice一个map记录走过的点
+        map = map.slice();
+
+        // todo 如果想用深度优先搜索，这里使用stack
+        // 广度优先搜索 初始化一个队列
+        let queue = [start];
+
+        container.children[start[1]*100 + start[0]].style.backgroundColor = "green";
+        container.children[end[1]*100 + end[0]].style.backgroundColor = "red";
+
+        // 如果遇到障碍物 不能走，遇到map边缘 不能走。
+        async function insert([x,y], pre){
+            // 遇到障碍物的情况
+            if(map[100*y+x]!==0){
+                return;
+            }
+            // 走到边界的情况
+            if (x<0 || y<0 || x>=100 || y>=100){
+                return;
+            }
+            // 顺利通过的点做标记，设置为pre
+            map[100*y + x] = pre;
+            container.children[100*y+x].style.backgroundColor = "lightgreen";
+            await sleep(1);
+            // 不能走回头路
+            queue.push([x,y]);
+        }
+
+        // 只要队列不空，循环展开一个单元格
+        while(queue.length){
+            let [x,y] = queue.shift(); // pop unshift 或者 push shift
+
+            if(x === end[0] && y === end[1]){
+                let path = [];
+                while(x !== start[0] || y !== start[1]){
+                    path.push([x,y]);
+                    container.children[100*y+x].style.backgroundColor = "pink";
+                    [x,y] = map[100*y+x];
+                }
+                return path;
+            }
+
+            // 将这个格上下左右push进队列 
+            await insert([x-1,y], [x,y]);
+            await insert([x+1,y], [x,y]);
+            await insert([x,y-1], [x,y]);
+            await insert([x,y+1], [x,y]);
+            
+            // 单元格斜方向格push进队列 
+            await insert([x-1,y-1], [x,y]);
+            await insert([x+1,y-1], [x,y]);
+            await insert([x-1,y+1], [x,y]);
+            await insert([x+1,y+1], [x,y]);
+        }
+        return null;
+    }
+
+</script>
