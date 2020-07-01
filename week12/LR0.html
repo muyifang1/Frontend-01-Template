@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>检查括号匹配完整性</title>
+</head>
+
+<body>
+    LR0 算法, 检查括号匹配完整性
+</body>
+
+</html>
+<script>
+    function parse(source) {
+        let stack = [];
+
+        for (let c of source) {
+            if (c === "(" || c === "[" || c === "{") {
+                stack.push(c);
+            }
+
+            if (c === ")") {
+                if (stack[stack.length - 1] === "(") {
+                    stack.pop();
+                } else {
+                    return false;
+                }
+            }
+
+            if (c === "]") {
+                if (stack[stack.length - 1] === "[") {
+                    stack.pop();
+                } else {
+                    return false;
+                }
+            }
+
+            if (c === "}") {
+                if (stack[stack.length - 1] === "{") {
+                    stack.pop();
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        if (stack.length === 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+</script>

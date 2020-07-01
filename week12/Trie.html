@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>字典树 存储words 并且判断出现最多的word</title>
+</head>
+
+<body>
+    字典树 存储words 并且判断出现最多的word
+</body>
+
+</html>
+<script>
+    class Trie {
+        constructor() {
+            // 这里用Object来保存，最好用Map
+            this.root = Object.create(null);
+        }
+
+        insert(word) {
+            let node = this.root;
+            for (let c of word) {
+                if (!node[c]) {
+                    node[c] = Object.create(null);
+                }
+                node = node[c];
+            }
+            // "$" 是字符串的隐藏结束符
+            if (!("$" in node)) {
+                // 初始化0
+                node["$"] = 0;
+            }
+            // 字符结束 $ 累加计数
+            node["$"]++
+        }
+
+        // 找出Trie树上 $ 最多的节点
+        most() {
+            let max = 0;
+            let maxWord = null;
+            // 递归访问每一个节点
+            let visit = (node, word) => {
+                if (node.$ && node.$ > max) {
+                    max = node.$;
+                    maxWord = word;
+                }
+                for (let p in node) {
+                    // 递归拼凑出词
+                    visit(node[p], word + p);
+                }
+            }
+            visit(this.root, "");
+            console.log(maxWord);
+        }
+    }
+
+    // 创建随机words
+    function randomWord(length) {
+        var s = "";
+        for (let i = 0; i < length; i++) {
+            s += String.fromCharCode(Math.random() * 26 + "a".charCodeAt(0));
+        }
+        return s;
+    }
+
+    let trie = new Trie();
+
+    for (let i = 0; i < 100000; i++) {
+        trie.insert(randomWord(4));
+    }
+
+    // 思考题： 使用 Trie 来进行数字排序，时间复杂度可超过 nlog(n),原因是 可以hash
+    // 1
+    // 22234
+    // 1000000
+    // 949
+    // 以上数据先前位补0 然后构建Trie树可统计最大值
+</script>
