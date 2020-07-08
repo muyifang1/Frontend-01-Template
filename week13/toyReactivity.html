@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>toyReactivity</title>
+</head>
+
+<body>
+
+</body>
+
+</html>
+
+<script>
+
+    // let handlers = [];
+    let handlers = new Map();
+
+    let usedReactivities = []; // 全局变量用于保存依赖收集
+
+    let object = {
+        a: 1,
+        b: 2
+    }
+
+    function reactive(obj) {
+        return new Proxy(obj, {
+            // 代理对象 对get的hook方法
+            get(obj, prop) { // 通过get进行依赖收集
+                // 此处 可以是hook回调方法
+                // console.log("this is proxy get method:", obj, prop);
+                usedReactivities.push([obj, prop]);
+                return obj[prop];
+            },
+            // 代理对象 对set的hook方法
+            set(obj, prop, val) {
+                obj[prop] = val;
+                // console.log("this is proxy set method:", obj, prop, val);
+                // 针对依赖，决定要执行哪些方法。
+                if (handlers.get(obj)) {
+                    if (handlers.get(obj).get(prop)) {
+                        for (let handler of handlers.get(obj).get(prop)) {
+                            handler();
+                        }
+                    }
+                }
+
+                // console.log(handlers);
+                return obj[prop];
+            }
+        })
+    }
+
+    function effect(handler) {
+        // 先清空usedReactivities数组
+        usedReactivities = [];
+        // 这次调用进行依赖收集,给 usedReactivities 赋值
+        handler();
+        // console.log(usedReactivities);
+        // handlers.push(handler);
+        // console.log("this is effect console log", handler);
+
+        for (let usedReactivity of usedReactivities) {
+            let [obj, prop] = usedReactivity;
+            //   console.log([obj, prop]);
+
+            if (!handlers.has(obj)) {
+                handlers.set(obj, new Map());
+            }
+
+            if (!handlers.get(obj).has(prop)) {
+                handlers.get(obj).set(prop, []);
+            }
+
+            handlers.get(obj).get(prop).push(handler);
+
+        }
+    }
+
+    /*
+        let dummy;
+        let proxy = reactive(object);
+    
+        effect(() => dummy = proxy.a);
+        console.log("change before", dummy);
+        // 修改proxy.a属性，dummy属性会一同变更
+        proxy.a = 2;
+        console.log("change after", dummy);
+    */
+
+    let v12, v1, v2;
+    let p1 = reactive({ a: 1 });
+    let p2 = reactive({ a: 2 });
+    // console.log(v12, v1, v2);
+    effect(() => v12 = p1.a + p2.a);
+    effect(() => v1 = p1.a);
+    effect(() => v2 = p2.a);
+
+    p1.a = 3;
+    // 当p1.a被修改时，v1,v2,v12 都被修改
+    console.log(v12, v1, v2);
+</script>
