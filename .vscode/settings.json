@@ -1,0 +1,7 @@
+{
+    "beautify.options": {
+        "editor.detectIndentation": false,
+        "editor.tabSize": 4, //vscode设置的缩进量
+        "editor.formatOnSave": true //保存时候自动格式化
+    }
+}
